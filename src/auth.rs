@@ -41,7 +41,7 @@ impl fmt::Display for Role {
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
     sub: String,
-    role: Role,
+    role: String,
     exp: usize,
 }
 
@@ -76,7 +76,7 @@ async fn authorize((role, headers): (Role, HeaderMap<HeaderValue>)) -> WebResult
                 &jwt,
                 &DecodingKey::from_secret(JWT_SECRET),
                 &Validation::new(Algorithm::HS512)
-            ).map_error(|_| reject::custom(Error::JWTTokenError))?;
+            ).map_err(|_| reject::custom(Error::JWTTokenError))?;
 
             if role == Role::Admin && Role::from_str(&decoded.claims.role) != Role::Admin {
                 return Err(reject::custom(Error::NoPermissionError));
@@ -89,7 +89,7 @@ async fn authorize((role, headers): (Role, HeaderMap<HeaderValue>)) -> WebResult
     }
 }
 
-fn jwt_from_header(headers: &HeaderMap<HeaderValue>) -> Result<String> {
+fn jwt_from_headers(headers: &HeaderMap<HeaderValue>) -> Result<String> {
     let header = match headers.get(AUTHORIZATION) {
         Some(v) => v,
         None => {
